@@ -1,0 +1,23 @@
+link quinemccluskey
+link procedures
+
+procedure main()
+	while formula:=read() do
+	{
+		if formula == "" then write("ERROR")
+		else
+		{
+			formula:=delete_spaces(formula)
+			s:=set()	
+			if check_syntax_correctness(formula)=0 then
+			{
+				formula:=RPN(formula)
+				s:=get_boolean_set(formula)
+				s2:=reduction(s)
+				s2:=minimalization(s,s2)
+				print_result(s2)
+			}
+			else write("ERROR")
+		}	
+	}
+end

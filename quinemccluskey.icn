@@ -1,0 +1,104 @@
+procedure merge(s1, s2)
+	r:=0
+	every i:=1 to *s1 do
+		if s1[i]~==s2[i] then 
+		{
+			r+:=1
+			s1[i]:="-"
+		}
+	#jesli wiecej niz jedna roznica albo ten sam wyraz, to zawiedzie
+	if r=1 then return s1
+end
+
+
+procedure reduction(s)
+	s2:=set()
+	b:=0
+	#generujemy wszystkie pary
+	every v1:=!s do
+	{
+		a:=0
+		every v2:=!s do
+			# w a zaznaczamy, ze wektor sie zredukowal
+			if insert(s2, merge(v1,v2)) then a:=b:=1
+		# jesli nie bylo redukcji		
+		if a=0 then insert(s2,v1)
+	}
+	if b=0 then return s2 else return reduction(s2) # albo return if b=0 then s2 else redukuj(s2)
+end
+
+
+procedure print_result(s)
+	if *s = 0 then write("F")
+	if *s = 1 then
+	{
+		v:=!s
+		if v[1] == "-" then write("T")
+	
+	}
+	else if *s >= 1 then
+	{
+		r1:=""
+		every v:=!s do
+		{
+			flag := 1
+			every i:=1 to *v do
+			{
+				if v[i]=="-" then next
+				if flag = 0 then r1||:="&"
+				if v[i]=="0" then r1||:="~"
+				r1||:=&lcase[i]
+				if flag = 1 then
+				{
+					flag := 0
+				}
+			}
+			r1||:="|"
+		}
+		write(r1[1:-1])
+	}
+end
+
+
+procedure count_minus(x)
+	i:=0
+	every find("-", x) do i+:=1
+	return i
+end
+
+
+procedure minimalization(s, s2)
+	final_set:=set()
+	tab:=table()
+	every x:=!s do
+		tab[x]:=set()
+	
+	every x:=!s2 do
+	{
+		amount:=count_minus(x)
+		every y:=generate_permutations(amount) do
+		{
+			tmp:=x
+			i:=1
+			j:=1
+			while i<=*tmp do
+			{
+				if tmp[i]=="-" then
+				{
+					tmp[i]:=y[j]
+					j+:=1
+				}
+				i+:=1
+			}
+			if tmp==!s then
+			{
+				insert(tab[tmp], x)
+			}
+		}
+	}
+	every x:=!s do
+	{
+		if *tab[x]=1 then insert(final_set, !tab[x])
+	}
+	return final_set
+end

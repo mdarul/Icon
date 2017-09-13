@@ -1,0 +1,230 @@
+procedure delete_spaces(formula)
+	final_string:=""
+	i:=1
+	while i<=*formula do
+	{	
+		if formula[i]~==" " then
+			final_string||:=formula[i]
+		i+:=1		
+	}
+	# nie używam map(x, &ucase, &lcase), bo zmapuje mi też T i F
+	final_string:=map(final_string, "QWERYUIOPASDGHJKLZXCVBNM", "qweryuiopasdghjklzxcvbnm")
+	return final_string
+end
+
+
+procedure check_syntax_correctness(formula)
+	arguments:='qwertyuiopasdfghjklzxcvbnmTF'
+	operators:='~^&|>'
+	parentheses_stack:=[]
+	i:=1
+	while i<=*formula do
+	{	
+		# using stack and 4 following if's to check wheter the parentheses are correct
+		if formula[i]=="[" then push(parentheses_stack, 2)		
+		else if formula[i]=="(" then push(parentheses_stack, 1)
+		else if formula[i]=="]" then
+		{
+			if *parentheses_stack=0 then return 1
+			x:=pop(parentheses_stack)
+			if x=1 then return 1
+		}
+		else if formula[i]==")" then
+		{
+			if *parentheses_stack=0 then return 1
+			x:=pop(parentheses_stack)
+			if x=2 then return 1
+		}
+		# check argument's corectness - if there are 2 args one by one, it is faulty
+		else if cset(formula[i])==!arguments then
+		{
+			if cset(formula[i+1])==!arguments then return 1
+		}
+		# check operator's corectness - if there are 2 of those one by one and the second is 
+		# not "~", it is faulty (and also if the formula starts with operator other than "~")
+		else if cset(formula[i])==!operators then
+		{
+			if i=1 & formula[i]~=="~" then return 1
+			if cset(formula[i+1])==!operators & cset(formula[i+1])~=='~' then return 1
+
+		}
+		# if none of conditions was accomplished, we've got a other sign, so it's faulty
+		else return 1		
+		i+:=1		
+	}
+	# parentheses condition - we push them to stack and then pop them, so if they are placed
+	# correctly (symmetrically) the stack have to be empty at the end
+	if *parentheses_stack~=0 then return 1
+	return 0
+end
+
+
+procedure RPN(w)
+	while w ?:= 2(="(", tab(bal(")")), pos(-1))
+	w ? every p := bal('>')
+	if \p then return RPN(w[1:p]) || RPN(w[p+1:0]) || w[p]
+	w ? every p := bal(!'&|')
+	if \p then return RPN(w[1:p]) || RPN(w[p+1:0]) || w[p]
+	if w[1] == "~" then return RPN(w[2:0]) || w[1]
+	return w
+end
+
+
+procedure not_member(arguments, char)
+	i:=1
+	while i<=*arguments do
+	{
+		if arguments[i]==char then return 1
+		i+:=1
+	}
+	return 0
+end
+
+
+procedure get_arguments(all_arguments, formula)
+	arguments:=""
+	i:=1
+	while i<=*formula do
+	{
+		if cset(formula[i])==!all_arguments & *arguments=0 & formula[i]~=="T" & formula[i]~=="F" then arguments:=formula[i]
+		if cset(formula[i])==!all_arguments & not_member(arguments, formula[i])=0 & formula[i]~=="T" & formula[i]~=="F" then
+			arguments||:=formula[i]
+		
+		i+:=1	
+	}
+
+	return arguments
+end
+
+
+procedure generate_permutations(n)
+	if n=0 then suspend ""
+	else suspend !"01" || generate_permutations(n-1)
+end
+
+
+procedure calculate(formula, arguments, values)
+	t:=table(0)
+	i:=1
+	while i<=*arguments do
+	{	
+		t[arguments[i]]:=values[i]
+		i+:=1
+	}
+	
+	operators:='~^&|>'
+	stack:=[]
+	i:=1
+	while i<=*formula do
+	{
+		if formula[i]==!arguments | formula[i]=="T" | formula[i]=="F" then push(stack, formula[i])
+		else if formula[i]==!operators then
+		{
+			case formula[i] of
+			{
+				"&":
+				{
+					y:=pop(stack)
+					if y=="T" then y:=1
+					else if y=="F" then y:=0
+					else y:=t[y]
+					
+					x:=pop(stack)
+					if x=="T" then x:=1
+					else if x=="F" then x:=0
+					else x:=t[x]
+		
+					if x=1 & y=1 then push(stack, "T")
+					else push(stack, "F")
+				}
+				"|":
+				{
+					y:=pop(stack)
+					if y=="T" then y:=1
+					else if y=="F" then y:=0
+					else y:=t[y]
+					
+					x:=pop(stack)
+					if x=="T" then x:=1
+					else if x=="F" then x:=0
+					else x:=t[x]
+		
+					if x=0 & y=0 then push(stack, "F")
+					else push(stack, "T")
+				}
+				"~":		
+				{
+					x:=pop(stack)
+					if x=="T" then x:=1
+					else if x=="F" then x:=0
+					else x:=t[x]
+					
+					if x=1 then push(stack, "F")
+					else push(stack, "T")
+				}	
+
+				"^":
+				{
+					y:=pop(stack)
+					if y=="T" then y:=1
+					else if y=="F" then y:=0
+					else y:=t[y]
+					
+					x:=pop(stack)
+					if x=="T" then x:=1
+					else if x=="F" then x:=0
+					else x:=t[x]
+		
+					if x=y then push(stack, "F")
+					else push(stack, "T")
+				}
+				">":
+				{
+					y:=pop(stack)
+					if y=="T" then y:=1
+					else if y=="F" then y:=0
+					else y:=t[y]
+					
+					x:=pop(stack)
+					if x=="T" then x:=1
+					else if x=="F" then x:=0
+					else x:=t[x]
+		
+					if x=1 & y=0 then push(stack, "F")
+					else push(stack, "T")
+				}
+			}
+		}
+		i+:=1
+	}
+
+	x:=pop(stack)
+	if x=="T" then x:=1
+	else if x=="F" then x:=0
+
+	return x
+end
+
+
+procedure get_boolean_set(formula)
+	all_arguments:='qwertyuiopasdfghjklzxcvbnmTF'
+	operators:='~^&|>'
+	stack:=[]
+	i:=1
+	while i<=*formula do
+	{
+
+		i+:=1
+	}
+	# firstly we save all occurring arguments
+	arguments:=get_arguments(all_arguments, formula)
+	s:=set()
+	every x:=generate_permutations(*arguments) do
+	{
+		y:=calculate(formula, arguments, x)
+		if y~=0 then
+			insert(s, x)	
+	}
+	return s
+	
+end
